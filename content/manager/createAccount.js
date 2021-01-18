@@ -15,20 +15,27 @@ const google = TbSync.providers.google;
 
 var tbSyncNewAccount = {
 
-    onClose: function() {
-        return true;
-    },
+    accountNameWidget: null,
+    clientIDWidget: null,
+    clientSecretWidget: null,
+    codeWidget: null,
+    browserWidget: null,
 
     onLoad: function() {
         this.providerData = new TbSync.ProviderData("google");
         //
-        this.accountNameWidget = document.getElementById('tbsync.newaccount.accountName');
-        this.accessTokenWidget = document.getElementById('tbsync.newaccount.accessToken');
+        this.accountNameWidget = document.getElementById("tbsync.newaccount.accountName");
+        this.clientIDWidget = document.getElementById("tbsync.newaccount.clientID");
+        this.clientSecretWidget = document.getElementById("tbsync.newaccount.clientSecret");
+        this.codeWidget = document.getElementById("tbsync.newaccount.code");
+        this.browserWidget = document.getElementById("tbsync.newaccount.browser");
         //
-        document.getElementById('tbsync.newaccount.wizard').canRewind = false;
-        document.getElementById('tbsync.newaccount.wizard').canAdvance = false;
+        this.browserWidget.style.display = "none";
         //
-        document.getElementById("tbsync.newaccount.accountName").focus();
+        document.getElementById("tbsync.newaccount.wizard").canRewind = false;
+        document.getElementById("tbsync.newaccount.wizard").canAdvance = false;
+        //
+        this.accountNameWidget.focus();
         //
         document.addEventListener("wizardfinish", tbSyncNewAccount.onFinish.bind(this));
     },
@@ -36,22 +43,45 @@ var tbSyncNewAccount = {
     onUnload: function() {
     },
 
+    onClose: function() {
+        return true;
+    },
+
     onUserTextInput: function() {
-        document.getElementById('tbsync.newaccount.wizard').canAdvance = (("" !== this.accountNameWidget.value.trim()) && ("" !== this.accessTokenWidget.value.trim()));
+        document.getElementById("tbsync.newaccount.wizard").canAdvance = (("" !== this.accountNameWidget.value.trim()) && ("" !== this.clientIDWidget.value.trim()) && ("" !== this.clientSecretWidget.value.trim()) && ("" !== this.codeWidget.value.trim()));
+    },
+
+    onNewCodeRequest: function() {
+        let clientID = this.clientIDWidget.value.trim();
+        let clientSecret = this.clientSecretWidget.value.trim();
+        let code = this.codeWidget.value.trim();
+        //
+        try {
+            let peopleAPI = new PeopleAPI(clientID, clientSecret, code);
+            //
+            peopleAPI.getNewCode(this.browserWidget, this.codeWidget);
+        }
+        catch (exception) {
+            alert("Could not get a new code: " + exception);
+        }
     },
 
     onFinish: function(event) {
         let accountName = this.accountNameWidget.value.trim();
-        let accessToken = this.accessTokenWidget.value.trim();
+        let clientID = this.clientIDWidget.value.trim();
+        let clientSecret = this.clientSecretWidget.value.trim();
+        let code = this.codeWidget.value.trim();
         //
-        tbSyncNewAccount.addAccount(accountName, accessToken);
+        tbSyncNewAccount.addAccount(accountName, clientID, clientSecret, code);
     },
 
-    addAccount: function(accountName, accessToken) {
+    addAccount: function(accountName, clientID, clientSecret, code) {
         // Retrieve a new object with default values.
         let newAccountEntry = this.providerData.getDefaultAccountEntries();
         // Override the default values.
-        newAccountEntry.accessToken = accessToken;
+        newAccountEntry.clientID = clientID;
+        newAccountEntry.clientSecret = clientSecret;
+        newAccountEntry.code = code;
         // Add the new account.
         let newAccountData = this.providerData.addAccount(accountName, newAccountEntry);
         //
